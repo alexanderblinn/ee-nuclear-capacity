@@ -4,6 +4,7 @@ Created on Tue Apr 25 18:46:43 2023
 """
 
 import locale
+from datetime import datetime
 import os
 
 import numpy as np
@@ -15,50 +16,35 @@ locale.setlocale(locale.LC_TIME, "us_US.UTF-8")
 
 def read_data(file_path: str) -> None:
     """Read the excel data file and preprocesses it."""
-    df = pd.read_excel(
+    return pd.read_excel(
         file_path,
         converters={
             "Baubeginn": pd.to_datetime,
             "erste Netzsynchronisation": pd.to_datetime,
             "Kommerzieller Betrieb": pd.to_datetime,
             "Abschaltung": pd.to_datetime,
-            "Bau/Projekt eingestellt": pd.to_datetime,
-        }
-    )
-
-    df["Jahr_Baubeginn"] = df["Baubeginn"].apply(
-        lambda x: x.year if isinstance(x, pd.Timestamp) else None
-    )
-
-    df["Jahr_Inbetriebnahme"] = df["Kommerzieller Betrieb"].apply(
-        lambda x: x.year if isinstance(x, pd.Timestamp) else None
-    )
-
-    df["Jahr_Abschaltung"] = df["Abschaltung"].apply(
-        lambda x: x.year if isinstance(x, pd.Timestamp) else None
-    )
-
-    df["Bauzeit"] = df["Jahr_Inbetriebnahme"] - df["Jahr_Baubeginn"]
-
-    return df
+            "Bau/Projekt eingestellt": pd.to_datetime
+            }
+        )
 
 
 def process_data(df: pd.DataFrame) -> pd.DataFrame:
     """Filter and compute the data and compute."""
-    years = np.arange(1955, 2025)
-    dct_length = []
-    dct_power = []
+    years = np.arange(1955, 2024)
+    lst_length = []
+    lst_power = []
     for year in years:
-        data_year = df.loc[(df["Jahr_Inbetriebnahme"] <= year) &
-                           ((df["Jahr_Abschaltung"] >= year) | (df["Jahr_Abschaltung"].isna()))]
-        dct_power.append(data_year["Leistung, Netto in MW"].sum())
-        dct_length.append(len(data_year))
+        data_year = df.loc[
+            (df["Kommerzieller Betrieb"] <= datetime(year, 12, 31)) &
+            ((df["Abschaltung"] >= datetime(year, 12, 31)) | (df["Abschaltung"].isna()))]
+        lst_power.append(data_year["Leistung, Netto in MW"].sum())
+        lst_length.append(len(data_year))
 
     d = pd.DataFrame()
     d["years"] = years
     d.set_index("years", inplace=True)
-    d["num"] = dct_length
-    d["power"] = dct_power
+    d["num"] = lst_length
+    d["power"] = lst_power
 
     return d
 
@@ -112,7 +98,7 @@ def plot_data(df: pd.DataFrame) -> None:
     fig.show()
 
 
-def main():
+def main() -> None:
     """Execute the script."""
     FILE_NAME = "nuclear_power_plants.xlsx"
     FILE_PATH = os.path.join(os.path.dirname(__file__), "data", FILE_NAME)
