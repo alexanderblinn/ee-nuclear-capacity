@@ -69,7 +69,7 @@ def plot_data(df: pd.DataFrame) -> None:
         mode='lines+markers',
         marker=dict(color='#977073'),
         yaxis='y2',
-        hovertemplate="Total Net Capacity: %{y:.0f} GW<extra></extra>",
+        hovertemplate="Total Net Capacity: %{y:.2f} GW<extra></extra>",
     ))
 
     fig.update_layout(
