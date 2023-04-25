@@ -101,7 +101,7 @@ def plot_data(df: pd.DataFrame) -> None:
         hoverlabel=dict(font=dict(size=12)),
         legend=dict(x=0.95, y=0.05,
                     xanchor='right', yanchor='bottom'),
-        width=1000,
+        width=997,
         height=580,
     )
 
