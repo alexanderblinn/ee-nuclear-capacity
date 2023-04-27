@@ -55,40 +55,45 @@ def plot_data(df: pd.DataFrame) -> None:
 
     fig.add_trace(go.Scatter(
         x=df.index,
-        y=df['num'],
-        name='Number of Operating Nuclear Reactors',
-        mode='lines+markers',
-        marker=dict(color='black'),
+        y=df["num"],
+        name="Number of Operating Nuclear Reactors",
+        mode="lines+markers",
+        marker=dict(color="black"),
         hovertemplate="Number of Reactors: %{y}<extra></extra>",
     ))
 
     fig.add_trace(go.Scatter(
         x=df.index,
-        y=df['power'] / 1000,
-        name='Total Net Capacity',
-        mode='lines+markers',
-        marker=dict(color='#977073'),
-        yaxis='y2',
+        y=df["power"] / 1000,
+        name="Total Net Capacity",
+        mode="lines+markers",
+        marker=dict(color="#977073"),
+        yaxis="y2",
         hovertemplate="Total Net Capacity: %{y:.2f} GW<extra></extra>",
     ))
+
+    # Add line at y=0
+    fig.add_shape(
+        dict(type="line", xref="paper", x0=0, x1=1, yref="y", y0=0, y1=0, layer="below", line=dict(color="rgba(0, 0, 0, 0)", width=2))
+    )
 
     fig.update_layout(
         title="Evolution of Nuclear Power Plants in Europe:<br>Number of Operating Nuclear Reactors and Their Combined Net Capacity",
         xaxis=dict(title=None,
-                   showgrid=True, gridwidth=1, gridcolor='rgba(128, 128, 128, 0.1)'),
+                   showgrid=True, gridwidth=1, gridcolor="rgba(128, 128, 128, 0.1)"),
         yaxis=dict(title="Number of Operating Nuclear Reactors",
-                   showgrid=True, gridwidth=1, gridcolor='rgba(128, 128, 128, 0.1)'),
-        yaxis2=dict(title="Net Capacity in GW", overlaying='y',
-                    side='right', showgrid=False),
-        plot_bgcolor='rgba(0, 0, 0, 0)',
-        paper_bgcolor='rgba(0, 0, 0, 0)',
+                   showgrid=True, gridwidth=1, gridcolor="rgba(128, 128, 128, 0.1)"),
+        yaxis2=dict(title="Net Capacity in GW", overlaying="y",
+                    side="right", showgrid=False),
+        plot_bgcolor="rgba(0, 0, 0, 0)",
+        paper_bgcolor="rgba(0, 0, 0, 0)",
         font=dict(family="Times New Roman", color="black", size=12),
-        hovermode='x unified',
+        hovermode="x unified",
         hoverlabel=dict(font=dict(size=12)),
         legend=dict(x=0.95, y=0.05,
-                    xanchor='right', yanchor='bottom'),
+                    xanchor="right", yanchor="bottom"),
         width=997,
-        height=580,
+        height=580
     )
 
     # Save the plot as an HTML file
