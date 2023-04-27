@@ -82,7 +82,7 @@ def plot_data(df: pd.DataFrame) -> None:
                     side='right', showgrid=False),
         plot_bgcolor='rgba(0, 0, 0, 0)',
         paper_bgcolor='rgba(0, 0, 0, 0)',
-        font=dict(family="Roboto", color="black", size=12),
+        font=dict(family="Times New Roman", color="black", size=12),
         hovermode='x unified',
         hoverlabel=dict(font=dict(size=12)),
         legend=dict(x=0.95, y=0.05,
@@ -101,7 +101,9 @@ def plot_data(df: pd.DataFrame) -> None:
 def main() -> None:
     """Execute the script."""
     FILE_NAME = "nuclear_power_plants.xlsx"
-    FILE_PATH = os.path.join(os.path.dirname(__file__), "data", FILE_NAME)
+    # FILE_PATH = os.path.join(os.path.dirname(__file__), "data", FILE_NAME)
+
+    FILE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "nuclear_reactors_europe_bubble", "data", FILE_NAME))
 
     # Read and preprocess the data
     df = read_data(FILE_PATH)
