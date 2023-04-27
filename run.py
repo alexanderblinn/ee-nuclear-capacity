@@ -74,7 +74,7 @@ def plot_data(df: pd.DataFrame) -> None:
 
     # Add line at y=0
     fig.add_shape(
-        dict(type="line", xref="paper", x0=0, x1=1, yref="y", y0=0, y1=0, line=dict(color="rgba(128, 128, 128, 0.1)", width=1))
+        dict(type="line", xref="paper", x0=0, x1=1, yref="y", y0=0, y1=0, line=dict(color="rgba(128, 128, 128, 0.1)", width=2))
     )
 
     fig.update_layout(
