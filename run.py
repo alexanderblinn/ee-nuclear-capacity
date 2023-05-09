@@ -14,6 +14,33 @@ import plotly.graph_objects as go
 locale.setlocale(locale.LC_TIME, "us_US.UTF-8")
 
 
+# Define a dictionary of colors for each country
+COUNTRY_COLORS = {
+    "Austria": "#FF00FF",
+    "Belarus": "#0072b1",
+    "Belgium": "#e6a000",
+    "Bulgaria": "#bfef45",
+    "Czech Republic": "#c4022b",
+    "Finland": "#9300d3",
+    "France": "#000000",
+    "Germany": "#d45e00",
+    "Hungary": "#FFD700",
+    "Italy": "#5d5a5a",
+    "Lithuania": "#FA8072",
+    "Netherlands": "#9e9e00",
+    "Poland" : "#CCCCFF",
+    "Romania": "#a65959",
+    "Slovakia": "#36648B",
+    "Slovenia": "#7DF9FF",
+    "Spain": "#c0c0c0",
+    "Sweden": "#2ca02c",
+    "Switzerland": "#c400a4",
+    "Turkey": "#9FE2BF",
+    "Ukraine": "#48066f",
+    "United Kingdom": "#ff0000"
+}
+
+
 def read_data(file_path: str) -> None:
     """Read the excel data file and preprocesses it."""
     return pd.read_excel(
@@ -27,85 +54,88 @@ def read_data(file_path: str) -> None:
             }
         )
 
-def calc_average_age(column: pd.Series, year: int) -> float:
-    dt = datetime(year, 12, 31) if year != 2023 else datetime(2023, 5, 7)
-    age = column.apply(lambda x: (dt - x).total_seconds() / 86400 / 365.25)
-    return age.mean() if isinstance(age.mean(), float) else 0
+
+def conditions(row, date_limit):
+    is_operational = row["Kommerzieller Betrieb"] <= date_limit
+    is_shutdown = row["Abschaltung"] >= date_limit
+    is_shutdown_unknown = pd.isnull(row["Abschaltung"])
+
+    return is_operational and (is_shutdown or is_shutdown_unknown)
 
 
-def process_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Filter and compute the data and compute."""
+def process_data(df: pd.DataFrame) -> dict:
+    """Filter and compute the data."""
+    df = df.copy()
+    df["Leistung, Netto in MW"] /= 1000
+
     years = np.arange(1955, 2024)
-    lst_length = []
-    lst_power = []
-    lst_avg_age = []
+    result = {}
     for year in years:
-        data_year = df.loc[
-            (df["Kommerzieller Betrieb"] <= datetime(year, 12, 31)) &
-            ((df["Abschaltung"] >= datetime(year, 12, 31)) | (df["Abschaltung"].isna()))]
-        lst_power.append(data_year["Leistung, Netto in MW"].sum())
-        lst_length.append(len(data_year))
+        mask = df.apply(conditions, axis=1, date_limit=datetime(year, 12, 31))
+        data_year = df.loc[mask]
 
-        avg_age = calc_average_age(data_year["Kommerzieller Betrieb"], year)
-        lst_avg_age.append(avg_age)
+        # Group the installed capacity of reactors per country
+        data_year_grouped = data_year[["Land", "Leistung, Netto in MW" ]].groupby(by=["Land"]).sum()
+        data_year_grouped.name = "capacity of reactors"
 
-    d = pd.DataFrame()
-    d["years"] = years
-    d.set_index("years", inplace=True)
-    d["num"] = lst_length
-    d["power"] = lst_power
-    d["avg_age"] = lst_avg_age
-
-    return d
+        result[year] = data_year_grouped
+    return result
 
 
-def plot_data(df: pd.DataFrame) -> None:
+def plot_data(data: dict) -> None:
     """Plot the number of operating nuclear reactors and their capacity."""
     fig = go.Figure()
 
-    fig.add_trace(go.Bar(
-        x=df.index,
-        y=df["num"],
-        name="Number of Operating Nuclear Reactors",
-        marker=dict(color=df["avg_age"], showscale=True, coloraxis="coloraxis1"),
-        hovertemplate="Number of Reactors: %{y}<br>Average Age of Reactors: %{marker.color:.2f} Years<extra></extra>"
-    ))
+    # Get unique country names
+    countries = set()
+    for df in data.values():
+        countries.update(df.index.unique())
+    countries = sorted(countries)
 
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df["power"] / 1000,
-        name="Total Net Capacity",
-        mode="lines+markers",
-        marker=dict(color="black"),
-        yaxis="y2",
-        hovertemplate="Total Net Capacity: %{y:.2f} GW<extra></extra>",
-    ))
+    for country in countries:
+        y_values = [df.loc[country, 'Leistung, Netto in MW'] if country in df.index else 0 for df in data.values()]
+        fig.add_trace(go.Bar(
+            x=list(data.keys()),
+            y=y_values,
+            name=country,
+            marker=dict(
+                color=COUNTRY_COLORS[country],
+                line=dict(width=0),
+                showscale=False,
+                opacity=1
+            ),
+            hovertemplate="%{y:.2f} GW"
+        ))
 
     fig.update_layout(
-        title="Evolution of Nuclear Power Plants in Europe:<br>Count, Total Net Capacity, and Average Age of Operating Nuclear Reactors",
+        title="Evolution of Nuclear Power Plants in Europe:<br>Total Net Capacity of Operating Nuclear Reactors by Country and Year",
         xaxis=dict(title=None,
                    showgrid=True, gridwidth=1, gridcolor="rgba(128, 128, 128, 0.1)"),
-        yaxis=dict(title="Number of Operating Nuclear Reactors",
-                   showgrid=True, gridwidth=1, gridcolor="rgba(128, 128, 128, 0.1)",
-                   range=[-5, 210]),
-        yaxis2=dict(title="Net Capacity in GW", overlaying="y",
-                side="right", showgrid=False, range=[-5, 170]),
+        yaxis=dict(
+            title="Net Capacity of Operating Nuclear Reactors in GW",
+            showgrid=True, gridwidth=1, gridcolor="rgba(128, 128, 128, 0.1)",
+            range=[-5, 165]
+            ),
+        barmode="stack",
         plot_bgcolor="rgba(0, 0, 0, 0)",
         paper_bgcolor="rgba(0, 0, 0, 0)",
         font=dict(family="sans-serif", color="black", size=12),
         hovermode="x unified",
-        hoverlabel=dict(bgcolor="white", font=dict(size=12)),
-        legend=dict(x=0.03, y=0.8,
-                    xanchor="left", yanchor="bottom"),
-        coloraxis1=dict(
-        colorscale="Emrld",
-        colorbar=dict(x=1, y=1.2, len=0.3, thickness=20, orientation="h",
-                      xanchor="right", yanchor="top",
-                      title="Average Age in Years", titleside="top")
-    ),
+        hoverlabel=dict(font=dict(size=12)),
         width=997,
-        height=580
-    )
+        height=580,
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.1,
+            xanchor="center",
+            x=0.5,
+            traceorder="normal",
+            tracegroupgap=20,
+            font=dict(size=10),
+            itemwidth=60
+            )
+        )
 
     # Save the plot as an HTML file
     fig.write_html("index.html")
