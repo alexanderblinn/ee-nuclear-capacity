@@ -4,8 +4,8 @@ Created on Tue Apr 25 18:46:43 2023
 """
 
 import locale
-from datetime import datetime
 import os
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -28,7 +28,7 @@ COUNTRY_COLORS = {
     "Italy": "#5d5a5a",
     "Lithuania": "#FA8072",
     "Netherlands": "#9e9e00",
-    "Poland" : "#CCCCFF",
+    "Poland": "#CCCCFF",
     "Romania": "#a65959",
     "Slovakia": "#36648B",
     "Slovenia": "#7DF9FF",
@@ -37,7 +37,7 @@ COUNTRY_COLORS = {
     "Switzerland": "#c400a4",
     "Turkey": "#9FE2BF",
     "Ukraine": "#48066f",
-    "United Kingdom": "#ff0000"
+    "United Kingdom": "#ff0000",
 }
 
 
@@ -45,14 +45,15 @@ def read_data(file_path: str) -> None:
     """Read the excel data file and preprocesses it."""
     return pd.read_excel(
         file_path,
+        sheet_name="data",
         converters={
             "Baubeginn": pd.to_datetime,
             "erste Netzsynchronisation": pd.to_datetime,
             "Kommerzieller Betrieb": pd.to_datetime,
             "Abschaltung": pd.to_datetime,
-            "Bau/Projekt eingestellt": pd.to_datetime
-            }
-        )
+            "Bau/Projekt eingestellt": pd.to_datetime,
+        },
+    )
 
 
 def conditions(row, date_limit):
@@ -75,7 +76,11 @@ def process_data(df: pd.DataFrame) -> dict:
         data_year = df.loc[mask]
 
         # Group the installed capacity of reactors per country
-        data_year_grouped = data_year[["Land", "Leistung, Netto in MW" ]].groupby(by=["Land"]).sum()
+        data_year_grouped = (
+            data_year[["Land", "Leistung, Netto in MW"]]
+            .groupby(by=["Land"])
+            .sum()
+        )
         data_year_grouped.name = "capacity of reactors"
 
         result[year] = data_year_grouped
@@ -93,29 +98,42 @@ def plot_data(data: dict) -> None:
     countries = sorted(countries)
 
     for country in countries:
-        y_values = [df.loc[country, 'Leistung, Netto in MW'] if country in df.index else 0 for df in data.values()]
-        fig.add_trace(go.Bar(
-            x=list(data.keys()),
-            y=y_values,
-            name=country,
-            marker=dict(
-                color=COUNTRY_COLORS[country],
-                line=dict(width=0),
-                showscale=False,
-                opacity=1
-            ),
-            hovertemplate="%{y:.2f} GW"
-        ))
+        y_values = [
+            df.loc[country, "Leistung, Netto in MW"]
+            if country in df.index
+            else 0
+            for df in data.values()
+        ]
+        fig.add_trace(
+            go.Bar(
+                x=list(data.keys()),
+                y=y_values,
+                name=country,
+                marker=dict(
+                    color=COUNTRY_COLORS[country],
+                    line=dict(width=0),
+                    showscale=False,
+                    opacity=1,
+                ),
+                hovertemplate="%{y:.2f} GW",
+            )
+        )
 
     fig.update_layout(
         title="Evolution of Nuclear Power Plants in Europe:<br>Total Net Capacity of Operating Nuclear Reactors by Country and Year",
-        xaxis=dict(title=None,
-                   showgrid=True, gridwidth=1, gridcolor="rgba(128, 128, 128, 0.1)"),
+        xaxis=dict(
+            title=None,
+            showgrid=True,
+            gridwidth=1,
+            gridcolor="rgba(128, 128, 128, 0.1)",
+        ),
         yaxis=dict(
             title="Net Capacity of Operating Nuclear Reactors in GW",
-            showgrid=True, gridwidth=1, gridcolor="rgba(128, 128, 128, 0.1)",
-            range=[-5, 165]
-            ),
+            showgrid=True,
+            gridwidth=1,
+            gridcolor="rgba(128, 128, 128, 0.1)",
+            range=[-5, 165],
+        ),
         barmode="stack",
         plot_bgcolor="rgba(0, 0, 0, 0)",
         paper_bgcolor="rgba(0, 0, 0, 0)",
@@ -133,9 +151,9 @@ def plot_data(data: dict) -> None:
             traceorder="normal",
             tracegroupgap=20,
             font=dict(size=10),
-            itemwidth=60
-            )
-        )
+            itemwidth=60,
+        ),
+    )
 
     # Save the plot as an HTML file
     fig.write_html("index.html")
@@ -147,9 +165,7 @@ def plot_data(data: dict) -> None:
 def main() -> None:
     """Execute the script."""
     FILE_NAME = "nuclear_power_plants.xlsx"
-    # FILE_PATH = os.path.join(os.path.dirname(__file__), "data", FILE_NAME)
-
-    FILE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ee-nuclear-commissioning", "data", FILE_NAME))
+    FILE_PATH = os.path.join(os.path.dirname(__file__), "data", FILE_NAME)
 
     # Read and preprocess the data
     df = read_data(FILE_PATH)
